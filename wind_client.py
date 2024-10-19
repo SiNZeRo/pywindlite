@@ -9,8 +9,8 @@ logger = logging.getLogger(__name__)
 
 class WindClient:
 
-    def __init__(self, cached_dir='/data/public//raw/cne/wind/cache'):
-        self.url = 'http://localhost:5000'
+    def __init__(self, cached_dir='/data/public//raw/cne/wind/cache', url='http://172.17.0.1:5000'):
+        self.url = url
         self.cached_dir = cached_dir
 
     def _make_post(self, path, data):
