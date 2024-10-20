@@ -199,9 +199,19 @@ def post_data():
     else:
         return json.dumps({'ok': False, 'error': 'Only support POST method'})
 
+
+def context_init():
+    app.logger.info('context_init')
+
+
+
 def main():
     logging.basicConfig(level=logging.DEBUG)
     app.logger.setLevel(logging.DEBUG)
+
+    with app.app_context():
+       wind = get_wind_server()
+
     app.run(debug=True)
 
 if __name__ == "__main__":

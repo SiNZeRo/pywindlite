@@ -15,8 +15,7 @@ class WindClient:
 
     def _make_post(self, path, data):
         response = requests.post(self.url + path, json=data)
-        print(response)
-        return response.json()
+        return response
 
     def cache_request(self, path, data, to_cache=False):
         reqhash = kits.make_hash(sorted([(k, v) for k, v in data.items()], key=lambda x: x[0]))
@@ -25,7 +24,13 @@ class WindClient:
         if os.path.exists(cache_file):
             rspdata =  kits.read_json(cache_file)
         else:
-            res = self._make_post(path, data)
+            result = self._make_post(path, data)
+            if result.status_code != 200:
+                raise Exception(f'Error: {result.text}')
+            res = result.json()
+            is_ok = res.get('ok', False)
+            if not is_ok:
+                raise Exception(f'Error: {res}')
             if to_cache:
                 kits.save_json(res, cache_file)
             rspdata = res
@@ -57,6 +62,7 @@ class WindClient:
             date = datetime.now().strftime('%Y%m%d')
 
         data = self.wset('sectorconstituent', f'date={date};sectorid=a001010100000000', to_cache=True)
+        # logger.debug(f"data: {data}")
 
         df = pd.DataFrame(json.loads(data['data']))
 
@@ -76,6 +82,7 @@ class WindClient:
         if start_date is None:
             start_date = date
         data = self.wsd(symbols, field, start_date, date, to_cache=to_cache)
+        # logger.debug(f'data: {data}')
         df = pd.DataFrame(json.loads(data['data']))
         if start_date == date:
             df = df.iloc[:, -1]
@@ -84,15 +91,22 @@ class WindClient:
         return df
 
 
-def test_client():
+def test_client(date):
     cl = WindClient()
 
-    symbols = cl.get_symbols()
+    # symbols = cl.get_symbols()
 
-    df = cl.get_daily_field(date='20241017', field='close')
+    # df = cl.get_daily_field(date='20241016', field='close')
+    # print(df)
+    # pcls_df = cl.get_daily_field(date='20241018', start_date='20241018', field='pre_close')
+    # print(pcls_df)
+
+
+    # df = cl.get_daily_field(date='20241019', field='close')
+    # print(df)
+
+    df = cl.get_daily_field(date=date, field='close')
     print(df)
-    pcls_df = cl.get_daily_field(date='20241017', start_date='20240901', field='pre_close')
-    print(pcls_df)
 
 def main():
     from pyttkits import kits, file as etfile
