@@ -142,9 +142,7 @@ class WindServer:
 
         return response
 
-__context__ = {
-}
-
+__context__ = {}
 
 def get_wind_server():
     global __context__

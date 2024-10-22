@@ -17,8 +17,10 @@ class WindClient:
         response = requests.post(self.url + path, json=data)
         return response
 
-    def cache_request(self, path, data, to_cache=False):
+    def cache_request(self, path, data, dstype='', to_cache=False):
         reqhash = kits.make_hash(sorted([(k, v) for k, v in data.items()], key=lambda x: x[0]))
+        if dstype:
+            reqhash = f'{dstype}/{reqhash}'
         cache_file = f'{self.cached_dir}/{reqhash}.json.gz'
         logger.debug(f'cache_file: {cache_file}')
         if os.path.exists(cache_file):
@@ -37,6 +39,9 @@ class WindClient:
         return rspdata
 
     def wsd(self, symbols, fields, begin_date, end_date, options='', to_cache=False):
+        today = datetime.now().strftime('%Y%m%d%H%M')
+        if end_date >= today and today[8:] < '1530':
+            to_cache = False
         data = {
             'cmd': 'wsd',
             'codes': symbols,
@@ -45,7 +50,11 @@ class WindClient:
             'endTime': end_date,
             'options': options
         }
-        return self.cache_request('/post_data', data, to_cache)
+        dstype = 'wsd/misc'
+        segs = fields.split(',')
+        if len(segs) == 1:
+            dstype = f'wsd/{fields}'
+        return self.cache_request('/post_data', data, dstype=dstype, to_cache=to_cache)
 
 
     def wset(self, table_name, options='', to_cache=False):
@@ -54,7 +63,7 @@ class WindClient:
             'tableName': table_name,
             'options': options
         }
-        return self.cache_request('/post_data', data, to_cache)
+        return self.cache_request('/post_data', data, dstype='wset', to_cache=to_cache)
 
     def get_symbols(self, date='', include_BJ=False):
         import pandas as pd
@@ -91,8 +100,8 @@ class WindClient:
         return df
 
 
-def test_client(date):
-    cl = WindClient()
+def test_client(date, url='http://172.16.0.1:5000'):
+    cl = WindClient(url=url)
 
     # symbols = cl.get_symbols()
 
@@ -105,8 +114,10 @@ def test_client(date):
     # df = cl.get_daily_field(date='20241019', field='close')
     # print(df)
 
-    df = cl.get_daily_field(date=date, field='close')
-    print(df)
+    cls = cl.get_daily_field(date=date, field='close')
+    print(cls)
+    precls = cl.get_daily_field(date=date, field='pre_close')
+    print(precls)
 
 def main():
     from pyttkits import kits, file as etfile
